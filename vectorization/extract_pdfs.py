@@ -45,26 +45,64 @@ class PDFPage:
 
 def clean_text(text: str) -> str:
     """
-    Clean extracted text by removing extra whitespace and artifacts.
+    Clean extracted text by removing extra whitespace, XML/SOAP artifacts, and noise.
     
     Args:
         text: Raw extracted text
         
     Returns:
-        Cleaned text
+        Cleaned text suitable for embedding
     """
+    # Remove XML/SOAP tags (including self-closing tags)
+    text = re.sub(r'<[^>]+/?>', ' ', text)
+    
+    # Remove xmlns attributes and namespace declarations
+    text = re.sub(r'xmlns[:\w]*\s*=\s*"[^"]*"', '', text)
+    text = re.sub(r'xsi:\w+\s*=\s*"[^"]*"', '', text)
+    
+    # Remove URLs
+    text = re.sub(r'https?://\S+', '', text)
+    
+    # Remove COPY markers (artifact from PDF copy-paste)
+    text = re.sub(r'\bCOPY\b\s*', '', text)
+    
+    # Remove timestamp patterns (e.g., "15/01/26, 4:18 pm")
+    text = re.sub(r'\d{1,2}/\d{2}/\d{2,4},?\s*\d{1,2}:\d{2}\s*(am|pm)?', '', text, flags=re.IGNORECASE)
+    
+    # Remove "X of Y" page indicators
+    text = re.sub(r'\d+\s+of\s+\d+', '', text)
+    
+    # Remove page headers/footers patterns common in NetSuite docs
+    text = re.sub(r'NetSuite Applications Suite\s*-\s*', '', text)
+    text = re.sub(r'Page \d+ of \d+', '', text)
+    
+    # Remove Oracle URL fragments
+    text = re.sub(r'docs\.oracle\.com[^\s]*', '', text)
+    
+    # Remove leftover attribute patterns (attr="value")
+    text = re.sub(r'\w+\s*=\s*"[^"]*"', ' ', text)
+    
+    # Remove non-printable characters except newlines and spaces
+    text = ''.join(char for char in text if char.isprintable() or char in '\n\t')
+    
     # Remove multiple spaces
     text = re.sub(r' +', ' ', text)
     
     # Remove multiple newlines (keep max 2)
     text = re.sub(r'\n{3,}', '\n\n', text)
     
-    # Remove page headers/footers patterns common in NetSuite docs
-    text = re.sub(r'NetSuite Applications Suite\s*-\s*', '', text)
-    text = re.sub(r'Page \d+ of \d+', '', text)
+    # Remove lines that are mostly punctuation/symbols (cleanup artifacts)
+    lines = text.split('\n')
+    cleaned_lines = []
+    for line in lines:
+        line = line.strip()
+        if line:
+            # Skip lines that are mostly non-alphanumeric
+            alpha_count = sum(1 for c in line if c.isalnum())
+            if alpha_count > len(line) * 0.3 or len(line) < 10:
+                cleaned_lines.append(line)
     
-    # Remove non-printable characters except newlines and spaces
-    text = ''.join(char for char in text if char.isprintable() or char in '\n\t')
+    text = '\n'.join(cleaned_lines)
     
     return text.strip()
 

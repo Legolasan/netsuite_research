@@ -65,6 +65,15 @@ class SearchResponse:
 class SearchService:
     """Semantic search service for NetSuite documentation."""
     
+    # Score boost multipliers for different source types
+    # CODE and RESEARCH sources have cleaner, more actionable content
+    SCORE_BOOST = {
+        "code": 1.3,      # 30% boost for connector code
+        "research": 1.25, # 25% boost for research docs
+        "doc": 1.0,       # No change for PDFs
+        "web": 1.1,       # 10% boost for web results
+    }
+    
     def __init__(self):
         """Initialize the search service with API clients."""
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
@@ -81,6 +90,12 @@ class SearchService:
         self.openai_client = OpenAI(api_key=self.openai_api_key)
         self.pinecone_client = Pinecone(api_key=self.pinecone_api_key)
         self.index = self.pinecone_client.Index(self.index_name)
+    
+    def _apply_score_boost(self, score: float, source_type: str) -> float:
+        """Apply score boost based on source type."""
+        boost = self.SCORE_BOOST.get(source_type, 1.0)
+        # Cap boosted score at 1.0 (100%)
+        return min(score * boost, 1.0)
     
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding vector for text."""
@@ -120,14 +135,18 @@ class SearchService:
             include_metadata=include_metadata
         )
         
-        # Parse results
+        # Parse results and apply score boosting
         search_results = []
         for match in results.matches:
             metadata = match.metadata or {}
             source_type = metadata.get("source_type", "doc")
+            
+            # Apply score boost for CODE and RESEARCH sources
+            boosted_score = self._apply_score_boost(match.score, source_type)
+            
             search_results.append(SearchResult(
                 chunk_id=match.id,
-                score=match.score,
+                score=boosted_score,
                 text=metadata.get("text", ""),
                 source_file=metadata.get("source_file", "Unknown"),
                 doc_category=metadata.get("doc_category", "GENERAL"),
@@ -137,6 +156,9 @@ class SearchService:
                 url=metadata.get("url") if source_type == "web" else None,
                 title=metadata.get("title") if source_type == "web" else None
             ))
+        
+        # Re-sort by boosted score (highest first)
+        search_results.sort(key=lambda r: r.score, reverse=True)
         
         return SearchResponse(
             query=query,
