@@ -1,13 +1,15 @@
 """
 NetSuite Documentation Vectorization - Main Vectorization Module
 
-This module handles the complete pipeline from PDFs to Pinecone vectors.
+This module handles the complete pipeline from multiple sources to Pinecone vectors.
+Supports: PDFs, Java code files, and research documents (JSON/MD).
 """
 
 import os
 import time
-from typing import List, Optional, Generator
+from typing import List, Optional, Generator, Union
 from dataclasses import dataclass
+from enum import Enum
 
 from openai import OpenAI
 from pinecone import Pinecone
@@ -19,7 +21,17 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 
 from config import get_config, Config
 from extract_pdfs import extract_all_pdfs, PDFDocument
-from chunk_text import chunk_document, TextChunk, estimate_total_chunks
+from extract_code import extract_all_code, CodeDocument
+from extract_research import extract_all_research, ResearchDocument
+from chunk_text import chunk_document, chunk_code_document, chunk_research_document, TextChunk, estimate_total_chunks
+
+
+class SourceType(Enum):
+    """Types of document sources."""
+    PDF = "pdf"
+    CODE = "code"
+    RESEARCH = "research"
+    ALL = "all"
 
 console = Console()
 
@@ -171,17 +183,23 @@ class NetSuiteVectorizer:
         
         return len(vectors)
     
-    def vectorize_document(self, document: PDFDocument) -> int:
+    def vectorize_document(self, document: Union[PDFDocument, CodeDocument, ResearchDocument]) -> int:
         """
-        Vectorize a single document.
+        Vectorize a single document (PDF, Code, or Research).
         
         Args:
-            document: PDFDocument to vectorize
+            document: Document to vectorize (PDFDocument, CodeDocument, or ResearchDocument)
             
         Returns:
             Number of vectors created
         """
-        chunks = list(chunk_document(document, self.config.processing))
+        # Choose appropriate chunking function based on document type
+        if isinstance(document, CodeDocument):
+            chunks = list(chunk_code_document(document, self.config.processing))
+        elif isinstance(document, ResearchDocument):
+            chunks = list(chunk_research_document(document, self.config.processing))
+        else:
+            chunks = list(chunk_document(document, self.config.processing))
         
         if not chunks:
             return 0
@@ -201,15 +219,17 @@ class NetSuiteVectorizer:
     
     def vectorize_all(
         self,
-        documents: Optional[List[PDFDocument]] = None,
-        max_documents: Optional[int] = None
+        documents: Optional[List[Union[PDFDocument, CodeDocument, ResearchDocument]]] = None,
+        max_documents: Optional[int] = None,
+        source_type: SourceType = SourceType.PDF
     ) -> VectorizationStats:
         """
-        Vectorize all documents in the source directory.
+        Vectorize all documents from the specified source type.
         
         Args:
             documents: Optional pre-extracted documents (extracts if not provided)
             max_documents: Optional limit on number of documents to process
+            source_type: Type of documents to process (PDF, CODE, RESEARCH, ALL)
             
         Returns:
             VectorizationStats with processing results
@@ -219,11 +239,37 @@ class NetSuiteVectorizer:
         
         # Extract documents if not provided
         if documents is None:
-            console.print("[blue]Extracting PDF documents...[/blue]")
-            documents = list(extract_all_pdfs())
+            documents = []
+            
+            if source_type in [SourceType.PDF, SourceType.ALL]:
+                console.print("[blue]Extracting PDF documents...[/blue]")
+                try:
+                    documents.extend(list(extract_all_pdfs()))
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Could not extract PDFs: {e}[/yellow]")
+            
+            if source_type in [SourceType.CODE, SourceType.ALL]:
+                console.print("[blue]Extracting Java code files...[/blue]")
+                code_errors = self.config.validate_code_source()
+                if not code_errors:
+                    documents.extend(list(extract_all_code(self.config.code_source_dir)))
+                else:
+                    console.print(f"[yellow]Warning: {code_errors[0]}[/yellow]")
+            
+            if source_type in [SourceType.RESEARCH, SourceType.ALL]:
+                console.print("[blue]Extracting research documents...[/blue]")
+                research_errors = self.config.validate_research_source()
+                if not research_errors:
+                    documents.extend(list(extract_all_research(self.config.research_source_dir)))
+                else:
+                    console.print(f"[yellow]Warning: {research_errors[0]}[/yellow]")
         
         if max_documents:
             documents = documents[:max_documents]
+        
+        if not documents:
+            console.print("[yellow]No documents found to process.[/yellow]")
+            return stats
         
         console.print(f"[blue]Processing {len(documents)} documents...[/blue]")
         
@@ -292,20 +338,56 @@ def main():
     parser.add_argument("--max-docs", type=int, help="Maximum number of documents to process")
     parser.add_argument("--dry-run", action="store_true", help="Show estimation without processing")
     parser.add_argument("--delete-all", action="store_true", help="Delete all vectors before processing")
+    parser.add_argument(
+        "--source", 
+        type=str, 
+        choices=["pdf", "code", "research", "all"],
+        default="all",
+        help="Source type to vectorize (default: all)"
+    )
     args = parser.parse_args()
+    
+    # Map string to enum
+    source_map = {
+        "pdf": SourceType.PDF,
+        "code": SourceType.CODE,
+        "research": SourceType.RESEARCH,
+        "all": SourceType.ALL,
+    }
+    source_type = source_map[args.source]
     
     try:
         vectorizer = NetSuiteVectorizer()
         
         if args.dry_run:
-            # Just show estimation
-            documents = list(extract_all_pdfs())
+            # Collect documents for estimation
+            documents = []
+            config = get_config()
+            
+            if source_type in [SourceType.PDF, SourceType.ALL]:
+                console.print("[blue]Checking PDFs...[/blue]")
+                try:
+                    documents.extend(list(extract_all_pdfs()))
+                except Exception as e:
+                    console.print(f"[yellow]PDF extraction skipped: {e}[/yellow]")
+            
+            if source_type in [SourceType.CODE, SourceType.ALL]:
+                console.print("[blue]Checking code files...[/blue]")
+                if config.code_source_dir.exists():
+                    documents.extend(list(extract_all_code(config.code_source_dir)))
+            
+            if source_type in [SourceType.RESEARCH, SourceType.ALL]:
+                console.print("[blue]Checking research docs...[/blue]")
+                if config.research_source_dir.exists():
+                    documents.extend(list(extract_all_research(config.research_source_dir)))
+            
             estimation = estimate_total_chunks(documents)
             
-            table = Table(title="Dry Run Estimation")
+            table = Table(title=f"Dry Run Estimation (source: {args.source})")
             table.add_column("Metric", style="cyan")
             table.add_column("Value", style="green")
             
+            table.add_row("Total Documents", str(len(documents)))
             for key, value in estimation.items():
                 if isinstance(value, float):
                     table.add_row(key, f"{value:.4f}")
@@ -313,12 +395,20 @@ def main():
                     table.add_row(key, f"{value:,}" if isinstance(value, int) else str(value))
             
             console.print(table)
+            
+            # Show breakdown by type
+            pdf_count = sum(1 for d in documents if isinstance(d, PDFDocument))
+            code_count = sum(1 for d in documents if isinstance(d, CodeDocument))
+            research_count = sum(1 for d in documents if isinstance(d, ResearchDocument))
+            
+            console.print(f"\n[dim]Breakdown: {pdf_count} PDFs, {code_count} code files, {research_count} research docs[/dim]")
             return
         
         if args.delete_all:
             vectorizer.delete_all_vectors()
         
-        stats = vectorizer.vectorize_all(max_documents=args.max_docs)
+        console.print(f"\n[bold blue]Starting vectorization (source: {args.source})[/bold blue]\n")
+        stats = vectorizer.vectorize_all(max_documents=args.max_docs, source_type=source_type)
         print_stats(stats)
         
         # Show index stats

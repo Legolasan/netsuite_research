@@ -50,11 +50,21 @@ class Config:
     # Paths
     base_dir: Path = field(default_factory=lambda: Path(__file__).parent.parent.parent)
     pdf_source_dir: Path = field(default_factory=lambda: Path(os.getenv("PDF_SOURCE_DIR", "../../")).resolve())
+    code_source_dir: Path = field(default_factory=lambda: Path(os.getenv("CODE_SOURCE_DIR", "../../Connector_Code")).resolve())
+    research_source_dir: Path = field(default_factory=lambda: Path(os.getenv("RESEARCH_SOURCE_DIR", "../")).resolve())
     
     def __post_init__(self):
         """Resolve paths after initialization."""
+        vectorization_dir = Path(__file__).parent
+        
         if not self.pdf_source_dir.is_absolute():
-            self.pdf_source_dir = (Path(__file__).parent / self.pdf_source_dir).resolve()
+            self.pdf_source_dir = (vectorization_dir / self.pdf_source_dir).resolve()
+        
+        if not self.code_source_dir.is_absolute():
+            self.code_source_dir = (vectorization_dir / self.code_source_dir).resolve()
+        
+        if not self.research_source_dir.is_absolute():
+            self.research_source_dir = (vectorization_dir / self.research_source_dir).resolve()
     
     def validate(self) -> List[str]:
         """Validate configuration and return list of errors."""
@@ -70,6 +80,20 @@ class Config:
             errors.append(f"PDF source directory does not exist: {self.pdf_source_dir}")
         
         return errors
+    
+    def validate_code_source(self) -> List[str]:
+        """Validate code source directory."""
+        errors = []
+        if not self.code_source_dir.exists():
+            errors.append(f"Code source directory does not exist: {self.code_source_dir}")
+        return errors
+    
+    def validate_research_source(self) -> List[str]:
+        """Validate research source directory."""
+        errors = []
+        if not self.research_source_dir.exists():
+            errors.append(f"Research source directory does not exist: {self.research_source_dir}")
+        return errors
 
 
 # Document categories for metadata
@@ -81,6 +105,8 @@ DOC_CATEGORIES = {
     "RECORD": ["Record", "Entity", "Transaction", "Item"],
     "SEARCH": ["Search", "Query", "SuiteQL"],
     "CUSTOM": ["Custom Record", "Custom Field", "Customization"],
+    "CODE": ["Connector", "Implementation", "Java", "Source"],
+    "RESEARCH": ["Analysis", "Research", "Summary", "Gap"],
 }
 
 # Object type keywords for metadata extraction

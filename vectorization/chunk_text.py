@@ -1,12 +1,14 @@
 """
 NetSuite Documentation Vectorization - Text Chunking Module
 
-This module handles splitting extracted PDF text into chunks suitable for embeddings.
+This module handles splitting extracted text into chunks suitable for embeddings.
+Supports: PDF documents, Java code files, and research documents.
 """
 
 import re
 import hashlib
-from typing import List, Generator, Optional
+from typing import List, Generator, Optional, Union
+
 from dataclasses import dataclass, field
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -211,12 +213,12 @@ def chunk_documents(
         yield from chunk_document(doc, config)
 
 
-def estimate_total_chunks(documents: List[PDFDocument], config: Optional[ProcessingConfig] = None) -> dict:
+def estimate_total_chunks(documents: List, config: Optional[ProcessingConfig] = None) -> dict:
     """
     Estimate the total number of chunks and tokens for a list of documents.
     
     Args:
-        documents: List of PDFDocuments
+        documents: List of documents (PDFDocument, CodeDocument, or ResearchDocument)
         config: Optional processing configuration
         
     Returns:
@@ -241,6 +243,121 @@ def estimate_total_chunks(documents: List[PDFDocument], config: Optional[Process
         "chunk_overlap": config.chunk_overlap,
         "estimated_embedding_cost_usd": (total_tokens / 1_000_000) * 0.02  # text-embedding-3-small pricing
     }
+
+
+# Import code and research document types (avoiding circular imports)
+def _get_code_document_class():
+    from extract_code import CodeDocument
+    return CodeDocument
+
+
+def _get_research_document_class():
+    from extract_research import ResearchDocument
+    return ResearchDocument
+
+
+def create_code_splitter(config: Optional[ProcessingConfig] = None) -> RecursiveCharacterTextSplitter:
+    """
+    Create a text splitter optimized for code.
+    
+    Args:
+        config: Optional processing config
+        
+    Returns:
+        Configured text splitter for code
+    """
+    if config is None:
+        config = get_config().processing
+    
+    return RecursiveCharacterTextSplitter(
+        chunk_size=config.chunk_size,
+        chunk_overlap=config.chunk_overlap,
+        length_function=count_tokens,
+        separators=[
+            "\n\n\n",      # Multiple blank lines (major sections)
+            "\n\n",        # Blank lines (between methods/classes)
+            "\n    }",     # End of method/class with indent
+            "\n}",         # End of class
+            "\n",          # Line breaks
+            ";",           # Statement ends
+            " ",           # Word breaks
+            ""             # Character breaks
+        ]
+    )
+
+
+def chunk_code_document(
+    document,  # CodeDocument type
+    config: Optional[ProcessingConfig] = None
+) -> Generator[TextChunk, None, None]:
+    """
+    Split a code document into chunks.
+    
+    Args:
+        document: CodeDocument to chunk
+        config: Optional processing configuration
+        
+    Yields:
+        TextChunk objects
+    """
+    splitter = create_code_splitter(config)
+    
+    # Split the document text
+    chunks = splitter.split_text(document.text)
+    
+    for i, chunk_text in enumerate(chunks):
+        chunk_id = generate_chunk_id(document.filename, i, chunk_text)
+        token_count = count_tokens(chunk_text)
+        
+        yield TextChunk(
+            chunk_id=chunk_id,
+            text=chunk_text,
+            token_count=token_count,
+            metadata={
+                **document.metadata,
+                "source_file": document.filename,
+                "source_type": "code",
+                "chunk_index": i,
+                "total_chunks": len(chunks),
+            }
+        )
+
+
+def chunk_research_document(
+    document,  # ResearchDocument type
+    config: Optional[ProcessingConfig] = None
+) -> Generator[TextChunk, None, None]:
+    """
+    Split a research document into chunks.
+    
+    Args:
+        document: ResearchDocument to chunk
+        config: Optional processing configuration
+        
+    Yields:
+        TextChunk objects
+    """
+    splitter = create_text_splitter(config)
+    
+    # Split the document text
+    chunks = splitter.split_text(document.text)
+    
+    for i, chunk_text in enumerate(chunks):
+        chunk_id = generate_chunk_id(document.filename, i, chunk_text)
+        token_count = count_tokens(chunk_text)
+        
+        yield TextChunk(
+            chunk_id=chunk_id,
+            text=chunk_text,
+            token_count=token_count,
+            metadata={
+                **document.metadata,
+                "source_file": document.filename,
+                "source_type": "research",
+                "chunk_index": i,
+                "total_chunks": len(chunks),
+            }
+        )
 
 
 if __name__ == "__main__":
