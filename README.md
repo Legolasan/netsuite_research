@@ -8,6 +8,7 @@ A comprehensive research platform for NetSuite connector development, featuring 
 
 - **Semantic Search**: Search NetSuite documentation using natural language
 - **RAG Chat**: Ask questions and get AI-powered answers with source citations
+- **Web Search Integration**: Automatically search the web and vectorize results for future use
 - **Research Docs**: Comprehensive documentation on objects, permissions, API limits
 - **Vectorization Pipeline**: Process and index NetSuite PDF documentation
 
@@ -149,6 +150,18 @@ answer = ask_netsuite("How do I implement incremental sync for Customers?")
 | `PINECONE_API_KEY` | Pinecone API key for vector storage | Yes |
 | `PINECONE_INDEX_NAME` | Pinecone index name | No (default: `netsuite-docs`) |
 | `EMBEDDING_MODEL` | OpenAI embedding model | No (default: `text-embedding-3-small`) |
+| `TAVILY_API_KEY` | Tavily API key for web search | No (enables live web search) |
+| `WEB_CACHE_DAYS` | Days before web content is considered stale | No (default: `7`) |
+
+### Web Search
+
+Web search is powered by [Tavily](https://tavily.com) - an AI-optimized search API. Get your free API key at https://tavily.com (1,000 free searches/month).
+
+When enabled, the app will:
+1. Search the web for NetSuite-related content
+2. Automatically vectorize and store results in Pinecone
+3. Future queries can retrieve cached web knowledge
+4. Combine documentation and web results for comprehensive answers
 
 ---
 
@@ -157,8 +170,11 @@ answer = ask_netsuite("How do I implement incremental sync for Customers?")
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/` | GET | Dashboard home page |
-| `/api/search` | POST | Semantic search query |
-| `/api/chat` | POST | RAG chat completion |
+| `/api/search` | POST | Semantic search (supports `include_web` param) |
+| `/api/chat` | POST | RAG chat with optional web search |
+| `/api/web-search` | POST | Standalone web search with vectorization |
+| `/api/refresh-web` | POST | Force fresh web search |
+| `/api/web-search-status` | GET | Check web search availability |
 | `/api/stats` | GET | Index statistics |
 | `/api/categories` | GET | Available categories |
 | `/health` | GET | Health check |

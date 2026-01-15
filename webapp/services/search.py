@@ -26,6 +26,10 @@ class SearchResult:
     doc_category: str
     object_type: str
     metadata: Dict[str, Any] = field(default_factory=dict)
+    # Web-specific fields
+    source_type: str = "doc"  # "doc" or "web"
+    url: Optional[str] = None
+    title: Optional[str] = None
 
 
 @dataclass
@@ -39,10 +43,23 @@ class SearchResponse:
         """Convert top results to a context string for RAG."""
         context_parts = []
         for result in self.results[:max_results]:
-            context_parts.append(
-                f"[Source: {result.source_file}]\n{result.text}"
-            )
+            if result.source_type == "web" and result.url:
+                context_parts.append(
+                    f"[Web Source: {result.title or result.source_file}]\nURL: {result.url}\n{result.text}"
+                )
+            else:
+                context_parts.append(
+                    f"[Doc Source: {result.source_file}]\n{result.text}"
+                )
         return "\n\n---\n\n".join(context_parts)
+    
+    def get_doc_results(self) -> List[SearchResult]:
+        """Get only documentation results."""
+        return [r for r in self.results if r.source_type == "doc"]
+    
+    def get_web_results(self) -> List[SearchResult]:
+        """Get only web results."""
+        return [r for r in self.results if r.source_type == "web"]
 
 
 class SearchService:
@@ -107,6 +124,7 @@ class SearchService:
         search_results = []
         for match in results.matches:
             metadata = match.metadata or {}
+            source_type = metadata.get("source_type", "doc")
             search_results.append(SearchResult(
                 chunk_id=match.id,
                 score=match.score,
@@ -114,7 +132,10 @@ class SearchService:
                 source_file=metadata.get("source_file", "Unknown"),
                 doc_category=metadata.get("doc_category", "GENERAL"),
                 object_type=metadata.get("object_type", "General"),
-                metadata=metadata
+                metadata=metadata,
+                source_type=source_type,
+                url=metadata.get("url") if source_type == "web" else None,
+                title=metadata.get("title") if source_type == "web" else None
             ))
         
         return SearchResponse(
@@ -122,6 +143,26 @@ class SearchService:
             results=search_results,
             total_results=len(search_results)
         )
+    
+    def search_docs_only(
+        self,
+        query: str,
+        top_k: int = 10,
+        filter: Optional[Dict[str, Any]] = None
+    ) -> SearchResponse:
+        """Search only documentation (exclude web results)."""
+        combined_filter = {"source_type": {"$ne": "web"}}
+        if filter:
+            combined_filter = {"$and": [combined_filter, filter]}
+        return self.search(query, top_k, combined_filter)
+    
+    def search_web_only(
+        self,
+        query: str,
+        top_k: int = 10
+    ) -> SearchResponse:
+        """Search only cached web results."""
+        return self.search(query, top_k, {"source_type": {"$eq": "web"}})
     
     def get_index_stats(self) -> Dict[str, Any]:
         """Get statistics about the Pinecone index."""
@@ -131,7 +172,7 @@ class SearchService:
                 "index_name": self.index_name,
                 "total_vectors": stats.total_vector_count,
                 "dimension": stats.dimension,
-                "categories": ["SOAP", "REST", "GOVERNANCE", "PERMISSION", "RECORD", "SEARCH", "CUSTOM", "GENERAL"],
+                "categories": ["SOAP", "REST", "GOVERNANCE", "PERMISSION", "RECORD", "SEARCH", "CUSTOM", "GENERAL", "WEB"],
                 "status": "connected"
             }
         except Exception as e:

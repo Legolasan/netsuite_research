@@ -1,5 +1,6 @@
 /**
  * NetSuite Documentation Dashboard - Alpine.js Application
+ * With Web Search Integration
  */
 
 function dashboard() {
@@ -14,6 +15,13 @@ function dashboard() {
         isChatLoading: false,
         selectedCategory: '',
         stats: {},
+        includeWebSearch: true,  // Web search toggle
+        webSearchStatus: {
+            available: false,
+            has_tavily: false,
+            has_cache: false,
+            message: 'Checking...'
+        },
         categories: [
             { id: 'SOAP', label: 'SOAP API', description: 'SOAP Web Services documentation' },
             { id: 'REST', label: 'REST API', description: 'REST Web Services documentation' },
@@ -22,11 +30,15 @@ function dashboard() {
             { id: 'RECORD', label: 'Records', description: 'Record types and entities' },
             { id: 'SEARCH', label: 'Search', description: 'Search and SuiteQL' },
             { id: 'CUSTOM', label: 'Customization', description: 'Custom records and fields' },
+            { id: 'WEB', label: 'Web', description: 'Cached web search results' },
         ],
 
         // Initialize
         async init() {
-            await this.loadStats();
+            await Promise.all([
+                this.loadStats(),
+                this.checkWebSearchStatus()
+            ]);
         },
 
         // Load index statistics
@@ -44,6 +56,31 @@ function dashboard() {
             }
         },
 
+        // Check web search availability
+        async checkWebSearchStatus() {
+            try {
+                const response = await fetch('/api/web-search-status');
+                if (response.ok) {
+                    this.webSearchStatus = await response.json();
+                } else {
+                    this.webSearchStatus = {
+                        available: false,
+                        has_tavily: false,
+                        has_cache: false,
+                        message: 'Web search unavailable'
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to check web search status:', error);
+                this.webSearchStatus = {
+                    available: false,
+                    has_tavily: false,
+                    has_cache: false,
+                    message: 'Error checking status'
+                };
+            }
+        },
+
         // Perform semantic search
         async performSearch() {
             if (!this.searchQuery.trim()) return;
@@ -54,7 +91,8 @@ function dashboard() {
             try {
                 const payload = {
                     query: this.searchQuery,
-                    top_k: 10
+                    top_k: 10,
+                    include_web: this.includeWebSearch
                 };
 
                 if (this.selectedCategory) {
@@ -108,7 +146,8 @@ function dashboard() {
             try {
                 const payload = {
                     message: message,
-                    top_k: 5
+                    top_k: 5,
+                    include_web: this.includeWebSearch
                 };
 
                 if (this.selectedCategory) {
@@ -126,14 +165,18 @@ function dashboard() {
                     this.chatMessages.push({
                         role: 'assistant',
                         content: data.answer,
-                        sources: data.sources
+                        sources: data.sources,
+                        doc_sources: data.doc_sources || [],
+                        web_sources: data.web_sources || []
                     });
                 } else {
                     const error = await response.json();
                     this.chatMessages.push({
                         role: 'assistant',
                         content: 'Sorry, I encountered an error: ' + (error.detail || 'Unknown error'),
-                        sources: []
+                        sources: [],
+                        doc_sources: [],
+                        web_sources: []
                     });
                 }
             } catch (error) {
@@ -141,7 +184,9 @@ function dashboard() {
                 this.chatMessages.push({
                     role: 'assistant',
                     content: 'Sorry, I encountered an error: ' + error.message,
-                    sources: []
+                    sources: [],
+                    doc_sources: [],
+                    web_sources: []
                 });
             } finally {
                 this.isChatLoading = false;
@@ -166,6 +211,7 @@ function dashboard() {
                 'RECORD': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
                 'SEARCH': 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
                 'CUSTOM': 'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+                'WEB': 'bg-green-500/20 text-green-400 border border-green-500/30',
                 'GENERAL': 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
             };
             return classes[category] || classes['GENERAL'];

@@ -41,6 +41,29 @@
             </button>
         </nav>
         
+        <!-- Web Search Toggle -->
+        <div class="p-4 border-t border-white/5">
+            <div class="flex items-center justify-between mb-2">
+                <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Web Search</h3>
+                <div class="flex items-center gap-2">
+                    <span x-show="webSearchStatus.has_tavily" class="w-2 h-2 bg-green-400 rounded-full" title="Live search available"></span>
+                    <span x-show="!webSearchStatus.has_tavily && webSearchStatus.has_cache" class="w-2 h-2 bg-yellow-400 rounded-full" title="Cached only"></span>
+                    <span x-show="!webSearchStatus.available" class="w-2 h-2 bg-red-400 rounded-full" title="Unavailable"></span>
+                </div>
+            </div>
+            <label class="flex items-center gap-3 cursor-pointer">
+                <div class="relative">
+                    <input type="checkbox" 
+                           x-model="includeWebSearch" 
+                           class="sr-only peer">
+                    <div class="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-green-600 transition-colors"></div>
+                    <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform peer-checked:translate-x-5"></div>
+                </div>
+                <span class="text-sm text-gray-400">Include web results</span>
+            </label>
+            <p class="text-xs text-gray-600 mt-2" x-text="webSearchStatus.message || 'Checking...'"></p>
+        </div>
+        
         <!-- Category Filter -->
         <div class="p-4 border-t border-white/5">
             <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Filter by Category</h3>
@@ -130,9 +153,19 @@
                     <!-- Results -->
                     <template x-for="(result, index) in searchResults" :key="result.chunk_id">
                         <div class="bg-black/30 border border-white/5 rounded-xl p-5 hover:border-primary-500/30 transition-all animate-slide-up"
+                             :class="result.source_type === 'web' ? 'border-l-2 border-l-green-500/50' : ''"
                              :style="{ animationDelay: index * 50 + 'ms' }">
                             <div class="flex items-start justify-between mb-3">
                                 <div class="flex items-center gap-2">
+                                    <!-- Source type badge -->
+                                    <span x-show="result.source_type === 'web'" 
+                                          class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg border border-green-500/30">
+                                        WEB
+                                    </span>
+                                    <span x-show="result.source_type !== 'web'" 
+                                          class="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-lg border border-purple-500/30">
+                                        DOC
+                                    </span>
                                     <span class="px-2 py-1 text-xs font-medium rounded-lg"
                                           :class="getCategoryClass(result.doc_category)"
                                           x-text="result.doc_category"></span>
@@ -146,10 +179,24 @@
                             </div>
                             <p class="text-gray-300 text-sm leading-relaxed mb-3" x-text="result.text"></p>
                             <div class="flex items-center gap-2 text-xs text-gray-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                </svg>
-                                <span x-text="result.source_file"></span>
+                                <!-- Doc source -->
+                                <template x-if="result.source_type !== 'web'">
+                                    <div class="flex items-center gap-2">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                        </svg>
+                                        <span x-text="result.source_file"></span>
+                                    </div>
+                                </template>
+                                <!-- Web source with link -->
+                                <template x-if="result.source_type === 'web' && result.url">
+                                    <a :href="result.url" target="_blank" class="flex items-center gap-2 text-green-400 hover:text-green-300 transition-colors">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                        </svg>
+                                        <span x-text="result.title || result.url"></span>
+                                    </a>
+                                </template>
                             </div>
                         </div>
                     </template>
@@ -170,7 +217,7 @@
                             </svg>
                         </div>
                         <h2 class="text-xl font-semibold text-gray-300 mb-2">Chat with NetSuite Documentation</h2>
-                        <p class="text-gray-500 max-w-md mx-auto mb-6">Ask questions about NetSuite APIs, integrations, permissions, or best practices. I'll find relevant documentation and provide detailed answers.</p>
+                        <p class="text-gray-500 max-w-md mx-auto mb-6">Ask questions about NetSuite APIs, integrations, permissions, or best practices. I'll search documentation <span x-show="includeWebSearch" class="text-green-400">and the web</span> to provide detailed answers.</p>
                         
                         <!-- Suggested questions -->
                         <div class="flex flex-wrap justify-center gap-2">
@@ -204,8 +251,45 @@
                                 <div class="max-w-[85%] bg-black/40 border border-white/10 rounded-2xl rounded-bl-md px-5 py-4">
                                     <div class="prose-custom text-gray-300" x-html="renderMarkdown(msg.content)"></div>
                                     
-                                    <!-- Sources -->
-                                    <div x-show="msg.sources && msg.sources.length > 0" class="mt-4 pt-4 border-t border-white/10">
+                                    <!-- Doc Sources -->
+                                    <div x-show="msg.doc_sources && msg.doc_sources.length > 0" class="mt-4 pt-4 border-t border-white/10">
+                                        <p class="text-xs text-purple-400 mb-2 flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                            </svg>
+                                            Documentation Sources:
+                                        </p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="source in msg.doc_sources" :key="source">
+                                                <span class="px-2 py-1 bg-purple-500/10 text-purple-300 text-xs rounded-md border border-purple-500/20" x-text="source"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Web Sources -->
+                                    <div x-show="msg.web_sources && msg.web_sources.length > 0" class="mt-3 pt-3 border-t border-white/10">
+                                        <p class="text-xs text-green-400 mb-2 flex items-center gap-1">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path>
+                                            </svg>
+                                            Web Sources:
+                                        </p>
+                                        <div class="flex flex-col gap-1">
+                                            <template x-for="ws in msg.web_sources" :key="ws.url">
+                                                <a :href="ws.url" target="_blank" 
+                                                   class="flex items-center gap-2 px-2 py-1 bg-green-500/10 text-green-300 text-xs rounded-md border border-green-500/20 hover:bg-green-500/20 transition-colors">
+                                                    <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                                                    </svg>
+                                                    <span x-text="ws.name" class="truncate"></span>
+                                                    <span x-show="ws.is_cached" class="text-gray-500">(cached)</span>
+                                                </a>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Legacy sources fallback -->
+                                    <div x-show="(!msg.doc_sources || msg.doc_sources.length === 0) && (!msg.web_sources || msg.web_sources.length === 0) && msg.sources && msg.sources.length > 0" class="mt-4 pt-4 border-t border-white/10">
                                         <p class="text-xs text-gray-500 mb-2">Sources:</p>
                                         <div class="flex flex-wrap gap-2">
                                             <template x-for="source in msg.sources" :key="source">
@@ -225,7 +309,7 @@
                                 <div class="w-2 h-2 bg-accent-400 rounded-full animate-pulse-glow"></div>
                                 <div class="w-2 h-2 bg-accent-400 rounded-full animate-pulse-glow" style="animation-delay: 0.2s"></div>
                                 <div class="w-2 h-2 bg-accent-400 rounded-full animate-pulse-glow" style="animation-delay: 0.4s"></div>
-                                <span class="text-gray-500 text-sm ml-2">Searching documentation...</span>
+                                <span class="text-gray-500 text-sm ml-2" x-text="includeWebSearch ? 'Searching docs and web...' : 'Searching documentation...'"></span>
                             </div>
                         </div>
                     </div>
