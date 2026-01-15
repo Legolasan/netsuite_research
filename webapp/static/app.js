@@ -22,6 +22,15 @@ function dashboard() {
             has_cache: false,
             message: 'Checking...'
         },
+        // PRD State
+        prdSubTab: 'summary',
+        prdData: {
+            summary: null,
+            comparison: null,
+            roadmap: null,
+        },
+        prdLoading: false,
+        prdLoaded: false,
         categories: [
             { id: 'SOAP', label: 'SOAP API', description: 'SOAP Web Services documentation' },
             { id: 'REST', label: 'REST API', description: 'REST Web Services documentation' },
@@ -78,6 +87,29 @@ function dashboard() {
                     has_cache: false,
                     message: 'Error checking status'
                 };
+            }
+        },
+
+        // Load PRD data
+        async loadPRDData() {
+            if (this.prdLoaded) return;
+            
+            this.prdLoading = true;
+            
+            try {
+                const response = await fetch('/api/prd/all');
+                if (response.ok) {
+                    this.prdData = await response.json();
+                    this.prdLoaded = true;
+                } else {
+                    console.error('Failed to load PRD data');
+                    this.prdData = { summary: null, comparison: null, roadmap: null };
+                }
+            } catch (error) {
+                console.error('PRD data loading error:', error);
+                this.prdData = { summary: null, comparison: null, roadmap: null };
+            } finally {
+                this.prdLoading = false;
             }
         },
 

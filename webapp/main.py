@@ -23,6 +23,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "vectorization"))
 from services.search import SearchService
 from services.chat import ChatService
 from services.web_search import WebSearchService
+from services.prd import PRDService
 
 
 # Request/Response Models
@@ -108,12 +109,13 @@ class ServiceStatus(BaseModel):
 search_service: Optional[SearchService] = None
 chat_service: Optional[ChatService] = None
 web_search_service: Optional[WebSearchService] = None
+prd_service: Optional[PRDService] = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialize services on startup."""
-    global search_service, chat_service, web_search_service
+    global search_service, chat_service, web_search_service, prd_service
     
     try:
         search_service = SearchService()
@@ -131,6 +133,13 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         print(f"⚠ Web Search service not available: {e}")
         web_search_service = None
+    
+    try:
+        prd_service = PRDService()
+        print("✓ PRD service initialized")
+    except Exception as e:
+        print(f"⚠ PRD service not available: {e}")
+        prd_service = None
     
     yield
     
@@ -378,6 +387,65 @@ async def web_search_status():
         "has_cache": web_search_service.index is not None,
         "message": "Web search is fully available" if web_search_service.tavily_client else "Web search available (cached results only)"
     }
+
+
+# =====================
+# PRD API Endpoints
+# =====================
+
+@app.get("/api/prd/summary")
+async def prd_summary():
+    """Get PRD summary data - implementation overview."""
+    if not prd_service:
+        raise HTTPException(
+            status_code=503,
+            detail="PRD service not initialized."
+        )
+    return prd_service.get_summary()
+
+
+@app.get("/api/prd/comparison")
+async def prd_comparison():
+    """Get PRD comparison data - current vs available."""
+    if not prd_service:
+        raise HTTPException(
+            status_code=503,
+            detail="PRD service not initialized."
+        )
+    return prd_service.get_comparison()
+
+
+@app.get("/api/prd/roadmap")
+async def prd_roadmap():
+    """Get PRD roadmap data - prioritized enhancements."""
+    if not prd_service:
+        raise HTTPException(
+            status_code=503,
+            detail="PRD service not initialized."
+        )
+    return prd_service.get_roadmap()
+
+
+@app.get("/api/prd/objects")
+async def prd_objects(category: Optional[str] = None):
+    """Get detailed objects list with status."""
+    if not prd_service:
+        raise HTTPException(
+            status_code=503,
+            detail="PRD service not initialized."
+        )
+    return prd_service.get_objects(category)
+
+
+@app.get("/api/prd/all")
+async def prd_all():
+    """Get all PRD data in one call."""
+    if not prd_service:
+        raise HTTPException(
+            status_code=503,
+            detail="PRD service not initialized."
+        )
+    return prd_service.get_all_prd_data()
 
 
 if __name__ == "__main__":
