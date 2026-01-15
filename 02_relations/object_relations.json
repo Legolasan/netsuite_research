@@ -1,0 +1,197 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-01-15",
+    "source": "NetSuite SDK and Documentation Analysis"
+  },
+  "entity_relationships": {
+    "Customer": {
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "salesRep", "target": "Employee", "type": "many-to-one"},
+        {"field": "partner", "target": "Partner", "type": "many-to-one"},
+        {"field": "category", "target": "CustomerCategory", "type": "many-to-one"},
+        {"field": "status", "target": "CustomerStatus", "type": "many-to-one"},
+        {"field": "terms", "target": "Term", "type": "many-to-one"},
+        {"field": "priceLevel", "target": "PriceLevel", "type": "many-to-one"},
+        {"field": "currency", "target": "Currency", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "addressbook", "type": "CustomerAddress"},
+        {"name": "contactRoles", "type": "Contact"},
+        {"name": "currency", "type": "CustomerCurrency"},
+        {"name": "partners", "type": "CustomerPartner"},
+        {"name": "salesTeam", "type": "CustomerSalesTeam"}
+      ]
+    },
+    "Vendor": {
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "category", "target": "VendorCategory", "type": "many-to-one"},
+        {"field": "terms", "target": "Term", "type": "many-to-one"},
+        {"field": "expenseAccount", "target": "Account", "type": "many-to-one"},
+        {"field": "payablesAccount", "target": "Account", "type": "many-to-one"},
+        {"field": "currency", "target": "Currency", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "addressbook", "type": "VendorAddress"},
+        {"name": "currency", "type": "VendorCurrency"}
+      ]
+    },
+    "Employee": {
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "department", "target": "Department", "type": "many-to-one"},
+        {"field": "location", "target": "Location", "type": "many-to-one"},
+        {"field": "supervisor", "target": "Employee", "type": "many-to-one"},
+        {"field": "job", "target": "HcmJob", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "addressbook", "type": "EmployeeAddress"},
+        {"name": "roles", "type": "EmployeeRole"}
+      ]
+    }
+  },
+  "transaction_relationships": {
+    "SalesOrder": {
+      "references": [
+        {"field": "entity", "target": "Customer", "type": "many-to-one"},
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "location", "target": "Location", "type": "many-to-one"},
+        {"field": "department", "target": "Department", "type": "many-to-one"},
+        {"field": "class", "target": "Classification", "type": "many-to-one"},
+        {"field": "currency", "target": "Currency", "type": "many-to-one"},
+        {"field": "terms", "target": "Term", "type": "many-to-one"},
+        {"field": "salesRep", "target": "Employee", "type": "many-to-one"},
+        {"field": "createdFrom", "target": "Estimate", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "item", "type": "SalesOrderItem", "item_refs": ["Item", "Location", "TaxCode"]},
+        {"name": "shipGroupList", "type": "SalesOrderShipGroup"},
+        {"name": "partners", "type": "SalesOrderPartner"},
+        {"name": "salesTeam", "type": "SalesOrderSalesTeam"}
+      ],
+      "transforms_to": ["Invoice", "ItemFulfillment", "CashSale"]
+    },
+    "Invoice": {
+      "references": [
+        {"field": "entity", "target": "Customer", "type": "many-to-one"},
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "createdFrom", "target": "SalesOrder", "type": "many-to-one"},
+        {"field": "location", "target": "Location", "type": "many-to-one"},
+        {"field": "department", "target": "Department", "type": "many-to-one"},
+        {"field": "class", "target": "Classification", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "item", "type": "InvoiceItem"},
+        {"name": "expCost", "type": "InvoiceExpCost"},
+        {"name": "itemCost", "type": "InvoiceItemCost"},
+        {"name": "time", "type": "InvoiceTime"}
+      ]
+    },
+    "PurchaseOrder": {
+      "references": [
+        {"field": "entity", "target": "Vendor", "type": "many-to-one"},
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "location", "target": "Location", "type": "many-to-one"},
+        {"field": "department", "target": "Department", "type": "many-to-one"},
+        {"field": "class", "target": "Classification", "type": "many-to-one"},
+        {"field": "terms", "target": "Term", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "item", "type": "PurchaseOrderItem"},
+        {"name": "expense", "type": "PurchaseOrderExpense"}
+      ],
+      "transforms_to": ["ItemReceipt", "VendorBill"]
+    },
+    "VendorBill": {
+      "references": [
+        {"field": "entity", "target": "Vendor", "type": "many-to-one"},
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "createdFrom", "target": "PurchaseOrder", "type": "many-to-one"},
+        {"field": "account", "target": "Account", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "item", "type": "VendorBillItem"},
+        {"name": "expense", "type": "VendorBillExpense"}
+      ]
+    },
+    "JournalEntry": {
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "currency", "target": "Currency", "type": "many-to-one"},
+        {"field": "accountingBook", "target": "AccountingBook", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "line", "type": "JournalEntryLine", "line_refs": ["Account", "Department", "Location", "Class", "Customer", "Vendor"]}
+      ]
+    }
+  },
+  "item_relationships": {
+    "InventoryItem": {
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "assetAccount", "target": "Account", "type": "many-to-one"},
+        {"field": "cogsAccount", "target": "Account", "type": "many-to-one"},
+        {"field": "incomeAccount", "target": "Account", "type": "many-to-one"},
+        {"field": "unitsType", "target": "UnitsType", "type": "many-to-one"},
+        {"field": "taxSchedule", "target": "TaxSchedule", "type": "many-to-one"}
+      ],
+      "sublists": [
+        {"name": "itemVendor", "type": "ItemVendor", "refs": ["Vendor"]},
+        {"name": "locations", "type": "InventoryItemLocations", "refs": ["Location"]},
+        {"name": "pricing", "type": "PricingMatrix", "refs": ["PriceLevel", "Currency"]}
+      ]
+    },
+    "AssemblyItem": {
+      "extends": "InventoryItem",
+      "additional_sublists": [
+        {"name": "billOfMaterials", "type": "AssemblyComponentList", "refs": ["Item"]}
+      ],
+      "additional_references": [
+        {"field": "manufacturingRouting", "target": "ManufacturingRouting", "type": "many-to-one"},
+        {"field": "manufacturingCostTemplate", "target": "ManufacturingCostTemplate", "type": "many-to-one"}
+      ]
+    }
+  },
+  "organizational_hierarchy": {
+    "Subsidiary": {
+      "self_reference": "parent",
+      "contains": ["Department", "Location", "Account", "Employee", "Customer", "Vendor"],
+      "references": [
+        {"field": "currency", "target": "Currency", "type": "many-to-one"}
+      ]
+    },
+    "Department": {
+      "self_reference": "parent",
+      "contained_by": "Subsidiary"
+    },
+    "Location": {
+      "self_reference": "parent",
+      "contained_by": "Subsidiary",
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"}
+      ]
+    },
+    "Account": {
+      "self_reference": "parent",
+      "contained_by": "Subsidiary",
+      "references": [
+        {"field": "subsidiary", "target": "Subsidiary", "type": "many-to-one"},
+        {"field": "currency", "target": "Currency", "type": "many-to-one"}
+      ]
+    }
+  },
+  "transform_operations": [
+    {"source": "Estimate", "target": "SalesOrder", "operation": "transform"},
+    {"source": "SalesOrder", "target": "Invoice", "operation": "transform"},
+    {"source": "SalesOrder", "target": "ItemFulfillment", "operation": "transform"},
+    {"source": "SalesOrder", "target": "CashSale", "operation": "transform"},
+    {"source": "PurchaseOrder", "target": "ItemReceipt", "operation": "transform"},
+    {"source": "PurchaseOrder", "target": "VendorBill", "operation": "transform"},
+    {"source": "ReturnAuthorization", "target": "CreditMemo", "operation": "transform"},
+    {"source": "ReturnAuthorization", "target": "CashRefund", "operation": "transform"},
+    {"source": "Opportunity", "target": "Estimate", "operation": "transform"},
+    {"source": "VendorReturnAuthorization", "target": "VendorCredit", "operation": "transform"}
+  ]
+}

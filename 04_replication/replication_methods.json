@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-01-15",
+    "source": "Connector Code Analysis"
+  },
+  "replication_modes": {
+    "incremental": {
+      "description": "Sync only changed records since last sync",
+      "mechanism": "lastModifiedDate filter",
+      "supported_categories": ["TRANSACTION", "ITEM", "DELETE"],
+      "offset_field": "lastModifiedDate",
+      "benefits": ["Reduced API calls", "Faster sync", "Lower governance impact"]
+    },
+    "full_load": {
+      "description": "Complete refresh of all records",
+      "mechanism": "No date filter, full table scan",
+      "supported_categories": ["STANDARD_FULL_LOAD", "CUSTOM"],
+      "offset_field": null,
+      "use_cases": ["Reference data", "Small datasets", "No modification tracking"]
+    },
+    "delete_tracking": {
+      "description": "Track deleted records via getDeleted API",
+      "mechanism": "deletedDate filter",
+      "offset_field": "deletedDate",
+      "api_operation": "getDeleted"
+    }
+  },
+  "category_replication": {
+    "TRANSACTION": {
+      "mode": "incremental",
+      "offset_field": "lastModifiedDate",
+      "primary_keys": ["internalId", "_type"],
+      "poll_type": "INCREMENTAL_LOAD",
+      "object_count": 37
+    },
+    "ITEM": {
+      "mode": "incremental",
+      "offset_field": "lastModifiedDate",
+      "primary_keys": ["internalId", "_type"],
+      "poll_type": "INCREMENTAL_LOAD",
+      "object_count": 24
+    },
+    "DELETE": {
+      "mode": "incremental",
+      "offset_field": "deletedDate",
+      "primary_keys": ["internalId", "_type"],
+      "poll_type": "INCREMENTAL_LOAD",
+      "object_count": 1
+    },
+    "STANDARD_FULL_LOAD": {
+      "mode": "full_load",
+      "offset_field": null,
+      "primary_keys": ["internalId"],
+      "poll_type": "FULL_LOAD",
+      "object_count": 67
+    },
+    "CUSTOM": {
+      "mode": "full_load",
+      "offset_field": null,
+      "primary_keys": ["internalId"],
+      "poll_type": "FULL_LOAD",
+      "object_count": "dynamic"
+    }
+  },
+  "incremental_eligible_full_load_objects": [
+    {
+      "name": "Customer",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P1",
+      "impact": "high",
+      "recommendation": "Enable incremental sync"
+    },
+    {
+      "name": "Vendor",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P1",
+      "impact": "high",
+      "recommendation": "Enable incremental sync"
+    },
+    {
+      "name": "Contact",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P1",
+      "impact": "high",
+      "recommendation": "Enable incremental sync"
+    },
+    {
+      "name": "Employee",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P2",
+      "impact": "medium"
+    },
+    {
+      "name": "Partner",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P2",
+      "impact": "medium"
+    },
+    {
+      "name": "SupportCase",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P2",
+      "impact": "medium"
+    },
+    {
+      "name": "Issue",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P2",
+      "impact": "medium"
+    },
+    {
+      "name": "CalendarEvent",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "PhoneCall",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "Message",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "Note",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "File",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "GiftCertificate",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "Solution",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "Paycheck",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "TimeBill",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    },
+    {
+      "name": "TimeEntry",
+      "current_mode": "full_load",
+      "incremental_field": "lastModifiedDate",
+      "priority": "P3",
+      "impact": "low"
+    }
+  ],
+  "poll_modes": {
+    "basic_search": {
+      "description": "Simple field-based filtering",
+      "class": "SearchBasic",
+      "use_case": "Standard incremental sync"
+    },
+    "saved_search": {
+      "description": "Execute NetSuite saved searches",
+      "use_case": "Complex pre-defined queries"
+    },
+    "advanced_search": {
+      "description": "SearchBasic + SearchRow combination",
+      "use_case": "Column selection, joins"
+    }
+  },
+  "pagination": {
+    "default_page_size": 1000,
+    "max_page_size": 1000,
+    "method": "searchMoreWithId"
+  },
+  "offset_structure": {
+    "incremental": {
+      "fields": ["lastModifiedDate"],
+      "format": "ISO8601 DateTime"
+    },
+    "delete": {
+      "fields": ["deletedDate"],
+      "format": "ISO8601 DateTime"
+    },
+    "full_load": {
+      "fields": [],
+      "format": null
+    }
+  },
+  "improvement_opportunities": {
+    "enable_incremental_for_entities": {
+      "description": "Convert full load entities to incremental",
+      "objects": ["Customer", "Vendor", "Contact", "Employee"],
+      "estimated_improvement": "50-90% reduction in API calls"
+    },
+    "suiteql_support": {
+      "description": "Add SuiteQL query support",
+      "benefits": ["More efficient queries", "Better filtering", "Aggregation support"]
+    },
+    "rest_api_integration": {
+      "description": "Add REST API alongside SOAP",
+      "benefits": ["Additional objects", "Async operations", "Modern protocol"]
+    }
+  }
+}

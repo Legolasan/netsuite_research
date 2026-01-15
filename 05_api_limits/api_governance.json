@@ -1,0 +1,138 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-01-15",
+    "source": "NetSuite Documentation"
+  },
+  "concurrency_limits": {
+    "by_service_tier": {
+      "tier_1": {"concurrent_requests": 5, "description": "Standard accounts"},
+      "tier_2": {"concurrent_requests": 10, "description": "Mid-size accounts"},
+      "tier_3": {"concurrent_requests": 15, "description": "Enterprise accounts"},
+      "tier_4": {"concurrent_requests": 25, "description": "Large enterprise"},
+      "tier_5": {"concurrent_requests": 50, "description": "SuiteCloud Plus"}
+    },
+    "suitecloud_plus_additions": {
+      "per_license": 10,
+      "description": "Additional concurrent requests per SuiteCloud Plus license"
+    }
+  },
+  "governance_units": {
+    "operations": {
+      "search": 10,
+      "searchMore": 10,
+      "searchMoreWithId": 10,
+      "get": 5,
+      "getList": 5,
+      "add": 10,
+      "update": 10,
+      "delete": 10,
+      "upsert": 10,
+      "getDeleted": 10,
+      "attach": 10,
+      "detach": 10,
+      "transform": 10
+    },
+    "notes": "Units are per call for search operations, per record for CRUD operations"
+  },
+  "request_limits": {
+    "search": {
+      "page_size": 1000,
+      "max_total_results": 1000000,
+      "timeout_seconds": 180,
+      "max_columns": 100
+    },
+    "getList": {
+      "batch_size": 1000
+    },
+    "record": {
+      "max_sublist_lines": 4000,
+      "max_custom_fields": 500
+    },
+    "request_body": {
+      "soap_max_size_mb": 50,
+      "rest_max_size_mb": 10
+    },
+    "response": {
+      "timeout_seconds": 360
+    }
+  },
+  "error_codes": {
+    "governance": [
+      {
+        "code": "EXCEEDED_CONCURRENT_REQUEST_LIMIT",
+        "description": "Too many concurrent requests",
+        "retry": true,
+        "action": "Wait and retry with backoff"
+      },
+      {
+        "code": "EXCEEDED_REQUEST_LIMIT",
+        "description": "Rate limit exceeded",
+        "retry": true,
+        "action": "Backoff and retry"
+      },
+      {
+        "code": "EXCEEDED_REQUEST_SIZE",
+        "description": "Request too large",
+        "retry": false,
+        "action": "Reduce batch size"
+      },
+      {
+        "code": "WS_CONCUR_SESSION_DISALLWD",
+        "description": "Session concurrency issue",
+        "retry": false,
+        "action": "Use stateless requests"
+      }
+    ],
+    "timeout": [
+      {
+        "code": "SSS_TIME_LIMIT_EXCEEDED",
+        "description": "Script timeout",
+        "retry": true,
+        "action": "Simplify query"
+      },
+      {
+        "code": "SEARCH_TIMED_OUT",
+        "description": "Search timeout",
+        "retry": true,
+        "action": "Add filters, reduce scope"
+      }
+    ]
+  },
+  "retry_strategy": {
+    "max_retries": 5,
+    "initial_wait_seconds": 1,
+    "max_wait_seconds": 32,
+    "backoff_type": "exponential",
+    "jitter": true
+  },
+  "best_practices": {
+    "optimization": [
+      "Use incremental sync to reduce record count",
+      "Select specific columns with SearchRow",
+      "Batch operations to reduce request count",
+      "Cache reference data locally",
+      "Use indexed fields in filters"
+    ],
+    "connection_management": [
+      "Implement connection pooling",
+      "Use token-based authentication",
+      "Stay within concurrency limits",
+      "Implement client-side request queue"
+    ]
+  },
+  "connector_defaults": {
+    "conservative": {
+      "concurrent_threads": 3,
+      "page_size": 1000,
+      "retry_attempts": 5,
+      "request_timeout_seconds": 180
+    },
+    "high_volume": {
+      "concurrent_threads": "match_account_limit",
+      "page_size": 1000,
+      "retry_attempts": 5,
+      "request_timeout_seconds": 180
+    }
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-01-15",
+    "source": "NetSuite Documentation"
+  },
+  "base_permissions": {
+    "web_services": {
+      "permission": "Web Services",
+      "location": "Setup > Users/Roles > Access",
+      "required": true,
+      "description": "Required for all API access"
+    },
+    "soap_web_services": {
+      "permission": "SOAP Web Services",
+      "location": "Setup > Integration",
+      "required": true,
+      "description": "Required for SOAP API access"
+    },
+    "rest_web_services": {
+      "permission": "REST Web Services",
+      "location": "Setup > Integration",
+      "required": false,
+      "description": "Required for REST API access"
+    },
+    "token_auth": {
+      "permission": "Log in using Access Tokens",
+      "location": "Setup > Users/Roles",
+      "required": true,
+      "description": "Required for OAuth token-based authentication"
+    }
+  },
+  "permission_levels": {
+    "none": {"value": 0, "operations": []},
+    "view": {"value": 1, "operations": ["search", "get", "getList"]},
+    "create": {"value": 2, "operations": ["add", "search", "get", "getList"]},
+    "edit": {"value": 3, "operations": ["update", "search", "get", "getList"]},
+    "full": {"value": 4, "operations": ["add", "update", "delete", "search", "get", "getList"]}
+  },
+  "record_permissions": {
+    "transactions": {
+      "Invoice": {"permission_path": "Transactions > Invoice", "minimum_for_read": "view"},
+      "SalesOrder": {"permission_path": "Transactions > Sales Order", "minimum_for_read": "view"},
+      "PurchaseOrder": {"permission_path": "Transactions > Purchase Order", "minimum_for_read": "view"},
+      "CashSale": {"permission_path": "Transactions > Cash Sale", "minimum_for_read": "view"},
+      "CreditMemo": {"permission_path": "Transactions > Credit Memo", "minimum_for_read": "view"},
+      "CustomerPayment": {"permission_path": "Transactions > Customer Payment", "minimum_for_read": "view"},
+      "VendorBill": {"permission_path": "Transactions > Vendor Bill", "minimum_for_read": "view"},
+      "VendorPayment": {"permission_path": "Transactions > Vendor Payment", "minimum_for_read": "view"},
+      "JournalEntry": {"permission_path": "Transactions > Make Journal Entry", "minimum_for_read": "view"},
+      "Estimate": {"permission_path": "Transactions > Estimate", "minimum_for_read": "view"},
+      "ItemFulfillment": {"permission_path": "Transactions > Item Fulfillment", "minimum_for_read": "view"},
+      "ItemReceipt": {"permission_path": "Transactions > Item Receipt", "minimum_for_read": "view"},
+      "ReturnAuthorization": {"permission_path": "Transactions > Return Authorization", "minimum_for_read": "view"},
+      "WorkOrder": {"permission_path": "Transactions > Work Order", "minimum_for_read": "view"},
+      "TransferOrder": {"permission_path": "Transactions > Transfer Order", "minimum_for_read": "view"},
+      "InventoryAdjustment": {"permission_path": "Transactions > Inventory Adjustment", "minimum_for_read": "view"},
+      "Deposit": {"permission_path": "Transactions > Deposit", "minimum_for_read": "view"},
+      "Check": {"permission_path": "Transactions > Check", "minimum_for_read": "view"},
+      "ExpenseReport": {"permission_path": "Transactions > Expense Report", "minimum_for_read": "view"},
+      "VendorCredit": {"permission_path": "Transactions > Vendor Credit", "minimum_for_read": "view"}
+    },
+    "entities": {
+      "Customer": {"permission_path": "Lists > Customers", "minimum_for_read": "view"},
+      "Vendor": {"permission_path": "Lists > Vendors", "minimum_for_read": "view"},
+      "Employee": {"permission_path": "Lists > Employees", "minimum_for_read": "view"},
+      "Contact": {"permission_path": "Lists > Contacts", "minimum_for_read": "view"},
+      "Partner": {"permission_path": "Lists > Partners", "minimum_for_read": "view"},
+      "Job": {"permission_path": "Lists > Jobs", "minimum_for_read": "view"}
+    },
+    "items": {
+      "InventoryItem": {"permission_path": "Lists > Items", "minimum_for_read": "view"},
+      "AssemblyItem": {"permission_path": "Lists > Items", "minimum_for_read": "view"},
+      "NonInventoryItem": {"permission_path": "Lists > Items", "minimum_for_read": "view"},
+      "ServiceItem": {"permission_path": "Lists > Items", "minimum_for_read": "view"},
+      "KitItem": {"permission_path": "Lists > Items", "minimum_for_read": "view"}
+    },
+    "setup": {
+      "Account": {"permission_path": "Lists > Accounts", "minimum_for_read": "view"},
+      "Department": {"permission_path": "Lists > Departments", "minimum_for_read": "view"},
+      "Location": {"permission_path": "Lists > Locations", "minimum_for_read": "view"},
+      "Subsidiary": {"permission_path": "Lists > Subsidiaries", "minimum_for_read": "view"},
+      "Classification": {"permission_path": "Lists > Classes", "minimum_for_read": "view"},
+      "Currency": {"permission_path": "Lists > Currencies", "minimum_for_read": "view"},
+      "Term": {"permission_path": "Lists > Terms", "minimum_for_read": "view"},
+      "TaxCode": {"permission_path": "Lists > Tax Codes", "minimum_for_read": "view"},
+      "PriceLevel": {"permission_path": "Lists > Price Levels", "minimum_for_read": "view"}
+    }
+  },
+  "special_permissions": {
+    "deleted_records": {
+      "permission": "Deleted Records",
+      "location": "Setup > View Deleted Records",
+      "required_for": ["getDeleted"],
+      "description": "Required to track deleted records"
+    },
+    "custom_records": {
+      "permission": "Custom Record Types",
+      "location": "Customization > Custom Record Types",
+      "required_for": ["Custom Record access"],
+      "description": "Required for each custom record type"
+    },
+    "saved_search": {
+      "permission": "Saved Searches",
+      "location": "Reports > Saved Searches",
+      "required_for": ["Saved Search execution"],
+      "description": "Required to run saved searches"
+    }
+  },
+  "role_templates": {
+    "read_only_integration": {
+      "name": "ETL Read-Only Integration",
+      "description": "For data extraction and replication",
+      "permissions": {
+        "web_services": true,
+        "transactions": "view",
+        "entities": "view",
+        "items": "view",
+        "setup": "view",
+        "custom_records": "view",
+        "deleted_records": "view"
+      }
+    },
+    "full_integration": {
+      "name": "Full Integration Role",
+      "description": "For bidirectional sync",
+      "permissions": {
+        "web_services": true,
+        "transactions": "full",
+        "entities": "full",
+        "items": "full",
+        "setup": "edit",
+        "custom_records": "full",
+        "deleted_records": "view"
+      }
+    }
+  },
+  "connector_requirements": {
+    "minimum_permissions": {
+      "transactions": "view",
+      "entities": "view",
+      "items": "view",
+      "setup": "view",
+      "deleted_records": "view",
+      "web_services": true
+    },
+    "optional_for_write": {
+      "transactions": "full",
+      "entities": "full",
+      "items": "full"
+    }
+  }
+}

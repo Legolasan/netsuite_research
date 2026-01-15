@@ -1,0 +1,216 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "generated": "2026-01-15",
+    "source": "NetSuite SOAP/REST API Documentation"
+  },
+  "implementation_status": {
+    "implemented": ["search", "searchMore", "searchMoreWithId", "getDeleted"],
+    "not_implemented": ["get", "getList", "add", "addList", "update", "updateList", "upsert", "upsertList", "delete", "deleteList", "transform", "attach", "detach", "asyncAddList", "asyncUpdateList", "asyncUpsertList", "asyncDeleteList", "getAsyncResult"]
+  },
+  "soap_operations": {
+    "read": {
+      "search": {
+        "description": "Execute search query",
+        "governance_units": 10,
+        "implemented": true,
+        "returns": "SearchResult with recordList"
+      },
+      "searchMore": {
+        "description": "Get next page of results",
+        "governance_units": 10,
+        "implemented": true,
+        "requires": "Previous search"
+      },
+      "searchMoreWithId": {
+        "description": "Get specific page by search ID",
+        "governance_units": 10,
+        "implemented": true,
+        "requires": "searchId from previous search"
+      },
+      "get": {
+        "description": "Get single record by ID",
+        "governance_units": 5,
+        "implemented": false,
+        "input": "RecordRef (type + internalId)"
+      },
+      "getList": {
+        "description": "Get multiple records by IDs",
+        "governance_units": "5 per record",
+        "implemented": false,
+        "input": "List of RecordRef"
+      },
+      "getDeleted": {
+        "description": "Get deleted records",
+        "governance_units": 10,
+        "implemented": true,
+        "input": "DeletedFilter (type, deletedDate)"
+      }
+    },
+    "write": {
+      "add": {
+        "description": "Create new record",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "Record object"
+      },
+      "addList": {
+        "description": "Create multiple records",
+        "governance_units": "10 per record",
+        "implemented": false,
+        "input": "List of Record objects"
+      },
+      "update": {
+        "description": "Update existing record",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "Record object with internalId"
+      },
+      "updateList": {
+        "description": "Update multiple records",
+        "governance_units": "10 per record",
+        "implemented": false,
+        "input": "List of Record objects"
+      },
+      "upsert": {
+        "description": "Create or update record",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "Record object"
+      },
+      "upsertList": {
+        "description": "Create or update multiple",
+        "governance_units": "10 per record",
+        "implemented": false,
+        "input": "List of Record objects"
+      },
+      "delete": {
+        "description": "Delete record",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "RecordRef"
+      },
+      "deleteList": {
+        "description": "Delete multiple records",
+        "governance_units": "10 per record",
+        "implemented": false,
+        "input": "List of RecordRef"
+      }
+    },
+    "transform": {
+      "transform": {
+        "description": "Convert record type (e.g., Quote to Order)",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "sourceRecord, targetRecord type"
+      }
+    },
+    "relationship": {
+      "attach": {
+        "description": "Link records (e.g., file to record)",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "AttachReference"
+      },
+      "detach": {
+        "description": "Unlink records",
+        "governance_units": 10,
+        "implemented": false,
+        "input": "DetachReference"
+      }
+    },
+    "async": {
+      "asyncAddList": {
+        "description": "Async bulk create",
+        "governance_units": "Variable",
+        "implemented": false,
+        "returns": "Job ID"
+      },
+      "asyncUpdateList": {
+        "description": "Async bulk update",
+        "governance_units": "Variable",
+        "implemented": false,
+        "returns": "Job ID"
+      },
+      "asyncUpsertList": {
+        "description": "Async bulk upsert",
+        "governance_units": "Variable",
+        "implemented": false,
+        "returns": "Job ID"
+      },
+      "asyncDeleteList": {
+        "description": "Async bulk delete",
+        "governance_units": "Variable",
+        "implemented": false,
+        "returns": "Job ID"
+      },
+      "getAsyncResult": {
+        "description": "Get async operation result",
+        "governance_units": 5,
+        "implemented": false,
+        "input": "Job ID"
+      }
+    }
+  },
+  "rest_operations": {
+    "implemented": false,
+    "available": {
+      "list": {
+        "method": "GET",
+        "endpoint": "/record/v1/{type}",
+        "description": "List records with filtering"
+      },
+      "get": {
+        "method": "GET",
+        "endpoint": "/record/v1/{type}/{id}",
+        "description": "Get single record"
+      },
+      "create": {
+        "method": "POST",
+        "endpoint": "/record/v1/{type}",
+        "description": "Create record"
+      },
+      "update": {
+        "method": "PATCH",
+        "endpoint": "/record/v1/{type}/{id}",
+        "description": "Update record"
+      },
+      "delete": {
+        "method": "DELETE",
+        "endpoint": "/record/v1/{type}/{id}",
+        "description": "Delete record"
+      },
+      "suiteql": {
+        "method": "POST",
+        "endpoint": "/query/v1/suiteql",
+        "description": "Execute SuiteQL query"
+      }
+    }
+  },
+  "implementation_roadmap": {
+    "phase_1": {
+      "name": "Enhance Read Operations",
+      "effort": "Low",
+      "operations": ["get", "getList"],
+      "priority": "Medium"
+    },
+    "phase_2": {
+      "name": "Write Operations",
+      "effort": "Medium",
+      "operations": ["add", "update", "upsert"],
+      "priority": "High"
+    },
+    "phase_3": {
+      "name": "Advanced Operations",
+      "effort": "High",
+      "operations": ["transform", "asyncAddList", "asyncUpdateList"],
+      "priority": "Medium"
+    },
+    "phase_4": {
+      "name": "REST and SuiteQL",
+      "effort": "High",
+      "operations": ["REST API", "SuiteQL"],
+      "priority": "Medium"
+    }
+  }
+}

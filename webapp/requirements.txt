@@ -1,0 +1,18 @@
+# NetSuite Documentation Web App Dependencies
+
+# Web Framework
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Templates
+jinja2>=3.1.2
+
+# API Clients
+openai>=1.12.0
+pinecone>=5.0.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# HTTP Client
+httpx>=0.26.0

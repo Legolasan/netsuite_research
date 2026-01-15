@@ -1,0 +1,29 @@
+# NetSuite Documentation Vectorization Pipeline
+# Python 3.9+ required
+
+# PDF Processing
+pypdf>=4.0.0
+pdfplumber>=0.10.0
+
+# Text Processing & Chunking
+langchain>=0.1.0
+langchain-community>=0.0.13
+langchain-openai>=0.0.5
+langchain-text-splitters>=0.0.1
+tiktoken>=0.5.0
+
+# Vector Database
+pinecone>=5.0.0
+
+# OpenAI Embeddings
+openai>=1.12.0
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Utilities
+tqdm>=4.66.0
+rich>=13.7.0
+
+# Optional: For better PDF text extraction
+# pytesseract>=0.3.10  # OCR support (requires tesseract installed)
