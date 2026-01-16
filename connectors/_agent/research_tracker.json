@@ -1,0 +1,26 @@
+{
+  "connectors": {
+    "netsuite": {
+      "status": "not_started",
+      "current_section": 0,
+      "sections_completed": [],
+      "sections_pending": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18],
+      "research_method": {},
+      "sources": [],
+      "created_at": "2026-01-16T00:00:00Z",
+      "last_updated": "2026-01-16T00:00:00Z"
+    }
+  },
+  "metadata": {
+    "template_version": "1.0.0",
+    "total_sections": 18,
+    "phases": [
+      {"phase": 1, "name": "Understand the Platform", "sections": [1, 2, 3]},
+      {"phase": 2, "name": "Data Access Mechanisms", "sections": [4, 5, 6, 7]},
+      {"phase": 3, "name": "Sync Design & Extraction", "sections": [8, 9, 10, 11]},
+      {"phase": 4, "name": "Reliability & Performance", "sections": [12, 13, 14]},
+      {"phase": 5, "name": "Advanced Considerations", "sections": [15, 16, 17]},
+      {"phase": 6, "name": "Troubleshooting", "sections": [18]}
+    ]
+  }
+}
