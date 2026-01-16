@@ -8,20 +8,27 @@
         <!-- Logo -->
         <div class="p-6 border-b border-white/5">
             <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-xl gradient-border flex items-center justify-center">
-                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                    </svg>
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
+                    <span class="text-white font-bold">CR</span>
                 </div>
                 <div>
-                    <h1 class="text-lg font-bold text-white">NetSuite Docs</h1>
-                    <p class="text-xs text-gray-400">Research & Documentation</p>
+                    <h1 class="text-lg font-bold text-white">Connector Research</h1>
+                    <p class="text-xs text-gray-400">Multi-Connector Platform</p>
                 </div>
             </div>
         </div>
         
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-2">
+            <button @click="activeTab = 'connectors'; loadConnectors()" 
+                    :class="activeTab === 'connectors' ? 'bg-indigo-600/20 text-indigo-400 border-indigo-500/30' : 'text-gray-400 hover:bg-white/5 border-transparent'"
+                    class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
+                </svg>
+                <span class="font-medium">Dashboard</span>
+            </button>
+            
             <button @click="activeTab = 'search'" 
                     :class="activeTab === 'search' ? 'bg-primary-600/20 text-primary-400 border-primary-500/30' : 'text-gray-400 hover:bg-white/5 border-transparent'"
                     class="w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all duration-200">
@@ -108,6 +115,180 @@
     
     <!-- Main Content -->
     <main class="flex-1 flex flex-col">
+        
+        <!-- Connectors Dashboard Panel -->
+        <div x-show="activeTab === 'connectors'" x-cloak class="flex-1 flex flex-col">
+            <!-- Header -->
+            <div class="p-6 border-b border-white/5 flex items-center justify-between">
+                <h2 class="text-xl font-semibold text-white">Connector Dashboard</h2>
+                <button @click="showNewConnectorModal = true" 
+                        class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-xl font-medium transition-colors flex items-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                    </svg>
+                    New Connector
+                </button>
+            </div>
+            
+            <!-- Connectors Grid -->
+            <div class="flex-1 overflow-auto p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Connector Cards -->
+                    <template x-for="connector in connectors" :key="connector.id">
+                        <div class="bg-black/30 border border-white/5 rounded-2xl p-5 hover:border-indigo-500/30 transition-all cursor-pointer"
+                             :class="{
+                                 'border-l-4 border-l-green-500/50': connector.status === 'complete',
+                                 'border-l-4 border-l-yellow-500/50': connector.status === 'researching',
+                                 'border-l-4 border-l-blue-500/50': connector.status === 'cloning',
+                                 'border-l-4 border-l-gray-500/50': connector.status === 'not_started'
+                             }">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-12 h-12 rounded-xl bg-indigo-600 flex items-center justify-center text-xl"
+                                         x-text="connector.name.substring(0,2).toUpperCase()">
+                                    </div>
+                                    <div>
+                                        <div class="font-semibold text-white" x-text="connector.name"></div>
+                                        <div class="text-sm text-gray-400" x-text="connector.connector_type.replace('_', ' ').toUpperCase()"></div>
+                                    </div>
+                                </div>
+                                <span class="px-2 py-1 text-xs rounded-lg border"
+                                      :class="{
+                                          'bg-green-500/20 text-green-400 border-green-500/30': connector.status === 'complete',
+                                          'bg-yellow-500/20 text-yellow-400 border-yellow-500/30': connector.status === 'researching',
+                                          'bg-blue-500/20 text-blue-400 border-blue-500/30': connector.status === 'cloning',
+                                          'bg-gray-500/20 text-gray-400 border-gray-500/30': connector.status === 'not_started' || connector.status === 'pending'
+                                      }"
+                                      x-text="connector.status === 'researching' ? 'Generating...' : connector.status.replace('_', ' ')">
+                                </span>
+                            </div>
+                            
+                            <div class="space-y-2 mb-4 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Progress</span>
+                                    <span class="text-white" x-text="connector.progress.sections_completed.length + '/' + connector.progress.total_sections"></span>
+                                </div>
+                                <div class="flex justify-between" x-show="connector.vectors_count > 0">
+                                    <span class="text-gray-500">Vectors</span>
+                                    <span class="text-indigo-400" x-text="connector.vectors_count.toLocaleString()"></span>
+                                </div>
+                            </div>
+                            
+                            <!-- Progress bar -->
+                            <div class="w-full bg-white/10 rounded-full h-2 mb-4">
+                                <div class="h-2 rounded-full transition-all"
+                                     :class="{
+                                         'bg-green-500': connector.status === 'complete',
+                                         'bg-yellow-500': connector.status === 'researching',
+                                         'bg-blue-500': connector.status === 'cloning',
+                                         'bg-gray-500': connector.status === 'not_started'
+                                     }"
+                                     :style="{ width: connector.progress.percentage + '%' }">
+                                </div>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="flex gap-2">
+                                <template x-if="connector.status === 'complete'">
+                                    <div class="flex gap-2 w-full">
+                                        <button @click="viewConnectorResearch(connector.id)" class="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors">View</button>
+                                        <button @click="searchConnector(connector.id)" class="flex-1 px-3 py-2 bg-white/5 hover:bg-white/10 rounded-lg text-sm transition-colors">Search</button>
+                                        <button @click="deleteConnector(connector.id)" class="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors">Delete</button>
+                                    </div>
+                                </template>
+                                <template x-if="connector.status === 'not_started'">
+                                    <button @click="startResearch(connector.id)" class="w-full px-3 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium transition-colors">Start Research</button>
+                                </template>
+                                <template x-if="connector.status === 'researching' || connector.status === 'cloning'">
+                                    <div class="flex gap-2 w-full">
+                                        <button class="flex-1 px-3 py-2 bg-yellow-500/20 text-yellow-400 rounded-lg text-sm transition-colors" disabled>
+                                            <span class="animate-pulse" x-text="connector.progress.current_section_name || 'Processing...'"></span>
+                                        </button>
+                                        <button @click="cancelResearch(connector.id)" class="px-3 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg text-sm transition-colors">Cancel</button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <!-- Add New Card -->
+                    <div @click="showNewConnectorModal = true" 
+                         class="bg-black/30 border-2 border-dashed border-white/20 hover:border-indigo-500/50 rounded-2xl p-5 flex flex-col items-center justify-center min-h-[280px] cursor-pointer transition-all">
+                        <div class="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                            <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                            </svg>
+                        </div>
+                        <div class="text-gray-400 font-medium">Add New Connector</div>
+                        <div class="text-gray-500 text-sm mt-1">Click to start research</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- New Connector Modal -->
+        <div x-show="showNewConnectorModal" x-cloak 
+             class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50"
+             @click.self="showNewConnectorModal = false">
+            <div class="bg-black/90 border border-white/10 rounded-3xl p-8 max-w-xl w-full mx-4 shadow-2xl">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold text-white">Create New Connector</h2>
+                    <button @click="showNewConnectorModal = false" class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <form @submit.prevent="createConnector()">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Connector Name *</label>
+                            <input type="text" x-model="newConnector.name" required
+                                   placeholder="e.g., Facebook Ads, Salesforce, Stripe"
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all text-white placeholder-gray-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">Connector Type</label>
+                            <div class="grid grid-cols-3 gap-2">
+                                <template x-for="type in connectorTypes" :key="type.id">
+                                    <button type="button"
+                                            @click="newConnector.type = type.id"
+                                            :class="newConnector.type === type.id ? 'bg-indigo-500/20 border-indigo-500/30 text-indigo-300' : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'"
+                                            class="px-3 py-2 rounded-xl text-sm border transition-colors"
+                                            x-text="type.label">
+                                    </button>
+                                </template>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">GitHub Repository URL (Optional)</label>
+                            <input type="text" x-model="newConnector.github_url"
+                                   placeholder="https://github.com/owner/repo"
+                                   class="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all text-white placeholder-gray-500">
+                            <p class="text-xs text-gray-500 mt-2">Provide a GitHub URL to analyze existing SDKs and code patterns</p>
+                        </div>
+                        
+                        <div class="bg-indigo-500/10 border border-indigo-500/20 rounded-xl p-4">
+                            <p class="text-sm text-indigo-300 font-medium">Research Sources</p>
+                            <p class="text-xs text-gray-400 mt-1">The agent will use: (1) Web search via Tavily, (2) GitHub repo analysis if provided</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-end gap-3 mt-6 pt-4 border-t border-white/10">
+                        <button type="button" @click="showNewConnectorModal = false" class="px-6 py-3 text-gray-400 hover:text-white transition-colors">Cancel</button>
+                        <button type="submit" 
+                                :disabled="!newConnector.name || isCreatingConnector"
+                                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl font-medium transition-colors flex items-center gap-2">
+                            <span x-show="isCreatingConnector" class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                            <span x-text="isCreatingConnector ? 'Creating...' : 'Create Connector'"></span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         
         <!-- Search Panel -->
         <div x-show="activeTab === 'search'" x-cloak class="flex-1 flex flex-col">
