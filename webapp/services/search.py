@@ -5,6 +5,8 @@ Adapted from vectorization/query_docs.py for web application use.
 """
 
 import os
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass, field
 
@@ -27,9 +29,11 @@ class SearchResult:
     object_type: str
     metadata: Dict[str, Any] = field(default_factory=dict)
     # Web-specific fields
-    source_type: str = "doc"  # "doc" or "web"
+    source_type: str = "doc"  # "doc", "code", "research", or "web"
     url: Optional[str] = None
     title: Optional[str] = None
+    # AI-generated summary
+    summary: Optional[str] = None
 
 
 @dataclass
@@ -97,6 +101,66 @@ class SearchService:
         # Cap boosted score at 1.0 (100%)
         return min(score * boost, 1.0)
     
+    def _generate_summary(self, text: str, source_type: str, source_file: str, query: str) -> str:
+        """Generate an AI-powered summary for a search result."""
+        # Customize prompt based on source type
+        if source_type == "code":
+            context = f"This is Java code from the NetSuite connector file '{source_file}'."
+            instruction = "Explain what this code does in plain English. Focus on the NetSuite objects, their types, and how they're used for data replication."
+        elif source_type == "research":
+            context = f"This is from a research document '{source_file}' about NetSuite integration."
+            instruction = "Summarize the key findings or recommendations from this content."
+        elif source_type == "web":
+            context = f"This is from a web page about NetSuite."
+            instruction = "Summarize the relevant information about NetSuite from this content."
+        else:
+            context = f"This is from NetSuite documentation '{source_file}'."
+            instruction = "Summarize the key information relevant to the search query."
+        
+        prompt = f"""You are a technical documentation assistant. {context}
+
+User's search query: "{query}"
+
+Content to summarize:
+{text[:1500]}
+
+{instruction}
+
+Provide a concise 2-3 sentence summary that directly answers or relates to the user's query. Be specific about NetSuite objects, features, or capabilities mentioned."""
+
+        try:
+            response = self.openai_client.chat.completions.create(
+                model="gpt-4o-mini",  # Fast and cost-effective for summaries
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=150,
+                temperature=0.3
+            )
+            return response.choices[0].message.content.strip()
+        except Exception as e:
+            return f"Summary unavailable: {str(e)}"
+    
+    def _summarize_results(self, results: List[SearchResult], query: str, max_results: int = 5) -> List[SearchResult]:
+        """Add AI summaries to search results using parallel processing."""
+        # Only summarize top results to save API calls
+        results_to_summarize = results[:max_results]
+        
+        def summarize_single(result: SearchResult) -> SearchResult:
+            summary = self._generate_summary(
+                result.text, 
+                result.source_type, 
+                result.source_file,
+                query
+            )
+            result.summary = summary
+            return result
+        
+        # Use thread pool for parallel API calls
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            summarized = list(executor.map(summarize_single, results_to_summarize))
+        
+        # Combine summarized results with remaining results
+        return summarized + results[max_results:]
+    
     def generate_embedding(self, text: str) -> List[float]:
         """Generate embedding vector for text."""
         response = self.openai_client.embeddings.create(
@@ -110,7 +174,9 @@ class SearchService:
         query: str,
         top_k: int = 10,
         filter: Optional[Dict[str, Any]] = None,
-        include_metadata: bool = True
+        include_metadata: bool = True,
+        include_summaries: bool = False,
+        max_summaries: int = 5
     ) -> SearchResponse:
         """
         Perform semantic search over the documentation.
@@ -120,6 +186,8 @@ class SearchService:
             top_k: Number of results to return
             filter: Optional metadata filter (e.g., {"doc_category": {"$eq": "SOAP"}})
             include_metadata: Whether to include metadata in results
+            include_summaries: Whether to generate AI summaries for results
+            max_summaries: Maximum number of results to summarize (to control API costs)
             
         Returns:
             SearchResponse with ranked results
@@ -160,6 +228,10 @@ class SearchService:
         # Re-sort by boosted score (highest first)
         search_results.sort(key=lambda r: r.score, reverse=True)
         
+        # Generate AI summaries if requested
+        if include_summaries and search_results:
+            search_results = self._summarize_results(search_results, query, max_summaries)
+        
         return SearchResponse(
             query=query,
             results=search_results,
@@ -170,13 +242,19 @@ class SearchService:
         self,
         query: str,
         top_k: int = 10,
-        filter: Optional[Dict[str, Any]] = None
+        filter: Optional[Dict[str, Any]] = None,
+        include_summaries: bool = False,
+        max_summaries: int = 5
     ) -> SearchResponse:
         """Search only documentation (exclude web results)."""
         combined_filter = {"source_type": {"$ne": "web"}}
         if filter:
             combined_filter = {"$and": [combined_filter, filter]}
-        return self.search(query, top_k, combined_filter)
+        return self.search(
+            query, top_k, combined_filter, 
+            include_summaries=include_summaries, 
+            max_summaries=max_summaries
+        )
     
     def search_web_only(
         self,

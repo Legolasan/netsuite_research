@@ -39,6 +39,9 @@ function dashboard() {
             { id: 'RECORD', label: 'Records', description: 'Record types and entities' },
             { id: 'SEARCH', label: 'Search', description: 'Search and SuiteQL' },
             { id: 'CUSTOM', label: 'Customization', description: 'Custom records and fields' },
+            { id: 'CODE', label: 'Code', description: 'Connector Java code' },
+            { id: 'CONNECTOR_OBJECTS', label: 'Connector Objects', description: 'Implemented NetSuite objects' },
+            { id: 'RESEARCH', label: 'Research', description: 'Internal research documents' },
             { id: 'WEB', label: 'Web', description: 'Cached web search results' },
         ],
 
@@ -123,8 +126,10 @@ function dashboard() {
             try {
                 const payload = {
                     query: this.searchQuery,
-                    top_k: 10,
-                    include_web: this.includeWebSearch
+                    top_k: 5,  // Reduced since we're generating summaries
+                    include_web: this.includeWebSearch,
+                    include_summaries: true,  // Enable AI summaries
+                    max_summaries: 5
                 };
 
                 if (this.selectedCategory) {
@@ -243,6 +248,14 @@ function dashboard() {
                 'RECORD': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
                 'SEARCH': 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30',
                 'CUSTOM': 'bg-pink-500/20 text-pink-400 border border-pink-500/30',
+                'CODE': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+                'CONNECTOR_OBJECTS': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+                'CONNECTOR_TRANSACTIONS': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+                'CONNECTOR_ITEMS': 'bg-orange-500/20 text-orange-400 border border-orange-500/30',
+                'RESEARCH': 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
+                'RESEARCH_OBJECTS': 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
+                'RESEARCH_REPLICATION': 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
+                'RESEARCH_GOVERNANCE': 'bg-teal-500/20 text-teal-400 border border-teal-500/30',
                 'WEB': 'bg-green-500/20 text-green-400 border border-green-500/30',
                 'GENERAL': 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
             };

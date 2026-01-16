@@ -163,16 +163,24 @@
                     <!-- Results -->
                     <template x-for="(result, index) in searchResults" :key="result.chunk_id">
                         <div class="bg-black/30 border border-white/5 rounded-xl p-5 hover:border-primary-500/30 transition-all animate-slide-up"
-                             :class="result.source_type === 'web' ? 'border-l-2 border-l-green-500/50' : ''"
+                             :class="result.source_type === 'web' ? 'border-l-2 border-l-green-500/50' : result.source_type === 'code' ? 'border-l-2 border-l-orange-500/50' : result.source_type === 'research' ? 'border-l-2 border-l-teal-500/50' : ''"
                              :style="{ animationDelay: index * 50 + 'ms' }">
                             <div class="flex items-start justify-between mb-3">
-                                <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-2 flex-wrap">
                                     <!-- Source type badge -->
                                     <span x-show="result.source_type === 'web'" 
                                           class="px-2 py-1 bg-green-500/20 text-green-400 text-xs font-medium rounded-lg border border-green-500/30">
                                         WEB
                                     </span>
-                                    <span x-show="result.source_type !== 'web'" 
+                                    <span x-show="result.source_type === 'code'" 
+                                          class="px-2 py-1 bg-orange-500/20 text-orange-400 text-xs font-medium rounded-lg border border-orange-500/30">
+                                        CODE
+                                    </span>
+                                    <span x-show="result.source_type === 'research'" 
+                                          class="px-2 py-1 bg-teal-500/20 text-teal-400 text-xs font-medium rounded-lg border border-teal-500/30">
+                                        RESEARCH
+                                    </span>
+                                    <span x-show="result.source_type === 'doc'" 
                                           class="px-2 py-1 bg-purple-500/20 text-purple-400 text-xs font-medium rounded-lg border border-purple-500/30">
                                         DOC
                                     </span>
@@ -187,15 +195,43 @@
                                     Score: <span class="text-primary-400 font-mono" x-text="(result.score * 100).toFixed(1) + '%'"></span>
                                 </span>
                             </div>
-                            <p class="text-gray-300 text-sm leading-relaxed mb-3" x-text="result.text"></p>
-                            <div class="flex items-center gap-2 text-xs text-gray-500">
+                            
+                            <!-- AI Summary (if available) -->
+                            <div x-show="result.summary" class="mb-4">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <svg class="w-4 h-4 text-accent-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                                    </svg>
+                                    <span class="text-xs text-accent-400 font-medium uppercase tracking-wide">AI Summary</span>
+                                </div>
+                                <p class="text-gray-200 text-sm leading-relaxed bg-accent-500/5 border border-accent-500/20 rounded-lg p-3" x-text="result.summary"></p>
+                            </div>
+                            
+                            <!-- Raw content (collapsible when summary exists) -->
+                            <div x-data="{ showRaw: !result.summary }">
+                                <button x-show="result.summary" 
+                                        @click="showRaw = !showRaw"
+                                        class="flex items-center gap-2 text-xs text-gray-500 hover:text-gray-400 mb-2 transition-colors">
+                                    <svg class="w-4 h-4 transition-transform" :class="showRaw ? 'rotate-90' : ''" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                    <span x-text="showRaw ? 'Hide raw content' : 'Show raw content'"></span>
+                                </button>
+                                <div x-show="showRaw" x-collapse>
+                                    <p class="text-gray-400 text-sm leading-relaxed mb-3 font-mono text-xs bg-black/20 p-3 rounded-lg overflow-x-auto" 
+                                       :class="result.source_type === 'code' ? 'whitespace-pre-wrap' : ''"
+                                       x-text="result.text"></p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 text-xs text-gray-500 mt-3 pt-3 border-t border-white/5">
                                 <!-- Doc source -->
                                 <template x-if="result.source_type !== 'web'">
                                     <div class="flex items-center gap-2">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
                                         </svg>
-                                        <span x-text="result.source_file"></span>
+                                        <span x-text="result.source_file" class="truncate max-w-xs"></span>
                                     </div>
                                 </template>
                                 <!-- Web source with link -->

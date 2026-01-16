@@ -33,6 +33,8 @@ class SearchRequest(BaseModel):
     category: Optional[str] = None
     object_type: Optional[str] = None
     include_web: bool = False  # Include cached web results
+    include_summaries: bool = True  # Generate AI summaries for results
+    max_summaries: int = 5  # Max results to summarize
 
 
 class SearchResultItem(BaseModel):
@@ -45,6 +47,7 @@ class SearchResultItem(BaseModel):
     source_type: str = "doc"
     url: Optional[str] = None
     title: Optional[str] = None
+    summary: Optional[str] = None  # AI-generated summary
 
 
 class SearchResponse(BaseModel):
@@ -209,13 +212,17 @@ async def search(request: SearchRequest):
             results = search_service.search(
                 query=request.query,
                 top_k=request.top_k,
-                filter=filter_dict if filter_dict else None
+                filter=filter_dict if filter_dict else None,
+                include_summaries=request.include_summaries,
+                max_summaries=request.max_summaries
             )
         else:
             results = search_service.search_docs_only(
                 query=request.query,
                 top_k=request.top_k,
-                filter=filter_dict if filter_dict else None
+                filter=filter_dict if filter_dict else None,
+                include_summaries=request.include_summaries,
+                max_summaries=request.max_summaries
             )
         
         return SearchResponse(
@@ -230,7 +237,8 @@ async def search(request: SearchRequest):
                     object_type=r.object_type,
                     source_type=r.source_type,
                     url=r.url,
-                    title=r.title
+                    title=r.title,
+                    summary=r.summary
                 )
                 for r in results.results
             ],
